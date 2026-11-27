@@ -2,11 +2,13 @@ import { useState, type FormEvent } from 'react';
 import { Check, Edit2, Plus, Trash2, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Artwork, ArtworkCategory } from '../../types/database';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface AdminCategoriesTabProps {
   categories: ArtworkCategory[];
   artworks: Artwork[];
   onRefresh: () => Promise<void>;
+  onNotify: (type: 'success' | 'error', text: string) => void;
 }
 
 function toSlug(name: string): string {
@@ -23,17 +25,19 @@ export function AdminCategoriesTab({
   categories,
   artworks,
   onRefresh,
+  onNotify,
 }: AdminCategoriesTabProps) {
   const [name, setName] = useState('');
   const [displayOrder, setDisplayOrder] = useState(categories.length + 1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [pendingDelete, setPendingDelete] = useState<ArtworkCategory | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
     if (!name.trim()) return;
 
     setSaving(true);
@@ -45,8 +49,9 @@ export function AdminCategoriesTab({
     });
 
     if (insertErr) {
-      setError(insertErr.message);
+      onNotify('error', `Không thể thêm danh mục: ${insertErr.message}`);
     } else {
+      onNotify('success', `Đã thêm danh mục "${name.trim()}".`);
       setName('');
       setDisplayOrder(categories.length + 2);
       await onRefresh();
@@ -55,7 +60,6 @@ export function AdminCategoriesTab({
   };
 
   const handleSaveEdit = async (cat: ArtworkCategory) => {
-    setError(null);
     if (!editingName.trim()) return;
     const nextSlug = toSlug(editingName) || cat.slug;
     const { error: updateErr } = await supabase
@@ -64,40 +68,54 @@ export function AdminCategoriesTab({
       .eq('id', cat.id);
 
     if (updateErr) {
-      setError(updateErr.message);
+      onNotify('error', `Không thể sửa danh mục: ${updateErr.message}`);
     } else {
+      onNotify('success', `Đã đổi tên danh mục thành "${editingName.trim()}".`);
       setEditingId(null);
       await onRefresh();
     }
   };
 
   const handleUpdateOrder = async (cat: ArtworkCategory, nextOrder: number) => {
-    await supabase
+    if (cat.display_order === nextOrder) return;
+    const { error } = await supabase
       .from('artwork_categories')
       .update({ display_order: nextOrder })
       .eq('id', cat.id);
-    await onRefresh();
+    if (error) {
+      onNotify('error', `Không thể đổi thứ tự: ${error.message}`);
+    } else {
+      onNotify('success', `Đã cập nhật thứ tự hiển thị cho "${cat.name}".`);
+      await onRefresh();
+    }
   };
 
-  const handleDelete = async (cat: ArtworkCategory) => {
-    setError(null);
+  const requestDelete = (cat: ArtworkCategory) => {
     const usedCount = artworks.filter((a) => a.category_id === cat.id).length;
     if (usedCount > 0) {
-      setError(
-        `Không thể xóa "${cat.name}" vì đang có ${usedCount} bức tranh thuộc danh mục này. Hãy chuyển các tranh đó sang danh mục khác trước.`
+      onNotify(
+        'error',
+        `Không thể xóa "${cat.name}" vì đang có ${usedCount} bức tranh thuộc danh mục này. Hãy chuyển tranh sang danh mục khác trước.`
       );
       return;
     }
+    setPendingDelete(cat);
+  };
 
-    if (!window.confirm(`Xóa danh mục "${cat.name}"?`)) return;
-
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     const { error: delErr } = await supabase
       .from('artwork_categories')
       .delete()
-      .eq('id', cat.id);
+      .eq('id', pendingDelete.id);
+
+    setDeleting(false);
     if (delErr) {
-      setError(delErr.message);
+      onNotify('error', `Xóa danh mục thất bại: ${delErr.message}`);
     } else {
+      onNotify('success', `Đã xóa danh mục "${pendingDelete.name}".`);
+      setPendingDelete(null);
       await onRefresh();
     }
   };
@@ -113,12 +131,6 @@ export function AdminCategoriesTab({
           được bảo vệ khỏi việc xóa nhầm.
         </p>
       </div>
-
-      {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-          {error}
-        </div>
-      )}
 
       <form
         onSubmit={handleAdd}
@@ -150,11 +162,11 @@ export function AdminCategoriesTab({
           className="inline-flex items-center gap-1.5 rounded-md bg-stone-900 px-4 py-2 font-semibold text-white hover:bg-[#9A3412]"
         >
           <Plus className="h-4 w-4" />
-          Thêm danh mục
+          {saving ? 'Đang thêm...' : 'Thêm danh mục'}
         </button>
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
         <table className="w-full text-left text-xs">
           <thead className="border-b border-stone-200 bg-stone-50 text-stone-600">
             <tr>
@@ -229,7 +241,7 @@ export function AdminCategoriesTab({
                         </button>
                         <button
                           type="button"
-                          onClick={() => void handleDelete(cat)}
+                          onClick={() => requestDelete(cat)}
                           className="rounded p-1 text-stone-400 hover:bg-red-50 hover:text-red-600"
                           aria-label={`Xóa ${cat.name}`}
                         >
@@ -244,6 +256,16 @@ export function AdminCategoriesTab({
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Xóa danh mục tranh?"
+        description={`Bạn có chắc muốn xóa danh mục "${pendingDelete?.name}"? Hành động này không thể hoàn tác.`}
+        confirmLabel="Xóa danh mục"
+        loading={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

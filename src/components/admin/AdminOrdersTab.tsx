@@ -14,6 +14,7 @@ interface AdminOrdersTabProps {
   currencySymbol: string;
   currencyCode: string;
   onRefresh: () => Promise<void>;
+  onNotify: (type: 'success' | 'error', text: string) => void;
 }
 
 export function AdminOrdersTab({
@@ -21,6 +22,7 @@ export function AdminOrdersTab({
   currencySymbol,
   currencyCode,
   onRefresh,
+  onNotify,
 }: AdminOrdersTabProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -78,7 +80,7 @@ export function AdminOrdersTab({
     setSaving(true);
     const parsedPrice = editFinalPrice.trim() ? Number(editFinalPrice) : null;
 
-    await supabase
+    const { error } = await supabase
       .from('commission_orders')
       .update({
         status: editStatus,
@@ -88,6 +90,15 @@ export function AdminOrdersTab({
       .eq('id', selectedOrder.id);
 
     setSaving(false);
+    if (error) {
+      onNotify('error', `Lưu đơn thất bại: ${error.message}`);
+      return;
+    }
+
+    onNotify(
+      'success',
+      `Đã cập nhật đơn ${selectedOrder.order_code} (${getOrderStatusLabel(editStatus)}).`
+    );
     setSelectedOrder(null);
     await onRefresh();
   };

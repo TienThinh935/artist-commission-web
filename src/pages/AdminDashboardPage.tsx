@@ -19,6 +19,7 @@ import { AdminOverviewTab } from '../components/admin/AdminOverviewTab';
 import { AdminPricingTab } from '../components/admin/AdminPricingTab';
 import { AdminReviewsTab } from '../components/admin/AdminReviewsTab';
 import { AdminSettingsTab } from '../components/admin/AdminSettingsTab';
+import { ToastBanner, type ToastMessage } from '../components/admin/ToastBanner';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { supabase } from '../lib/supabase';
 import type {
@@ -55,6 +56,19 @@ export function AdminDashboardPage() {
   const [commissionTypes, setCommissionTypes] = useState<CommissionType[]>([]);
   const [commissionAddons, setCommissionAddons] = useState<CommissionAddon[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const showToast = useCallback((type: 'success' | 'error', text: string) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, type, text }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   const loadAdminData = useCallback(async () => {
     setLoadingData(true);
@@ -113,10 +127,22 @@ export function AdminDashboardPage() {
 
   const handleToggleStatus = async (nextStatus: CommissionStatus) => {
     if (!settings) return;
-    await supabase
+    const { error } = await supabase
       .from('site_settings')
       .update({ commission_status: nextStatus })
       .eq('id', settings.id);
+
+    if (error) {
+      showToast('error', `Không thể đổi trạng thái: ${error.message}`);
+      return;
+    }
+
+    showToast(
+      'success',
+      nextStatus === 'OPEN'
+        ? 'Đã chuyển trạng thái sang ĐANG MỞ nhận đơn.'
+        : 'Đã chuyển trạng thái sang TẠM ĐÓNG nhận đơn.'
+    );
     await loadAdminData();
   };
 
@@ -223,6 +249,7 @@ export function AdminDashboardPage() {
                   currencySymbol={currencySymbol}
                   currencyCode={currencyCode}
                   onRefresh={loadAdminData}
+                  onNotify={showToast}
                 />
               )}
               {activeTab === 'artworks' && (
@@ -230,6 +257,7 @@ export function AdminDashboardPage() {
                   artworks={artworks}
                   categories={categories}
                   onRefresh={loadAdminData}
+                  onNotify={showToast}
                 />
               )}
               {activeTab === 'categories' && (
@@ -237,6 +265,7 @@ export function AdminDashboardPage() {
                   categories={categories}
                   artworks={artworks}
                   onRefresh={loadAdminData}
+                  onNotify={showToast}
                 />
               )}
               {activeTab === 'pricing' && (
@@ -246,22 +275,30 @@ export function AdminDashboardPage() {
                   currencySymbol={currencySymbol}
                   currencyCode={currencyCode}
                   onRefresh={loadAdminData}
+                  onNotify={showToast}
                 />
               )}
               {activeTab === 'reviews' && (
-                <AdminReviewsTab reviews={reviews} onRefresh={loadAdminData} />
+                <AdminReviewsTab
+                  reviews={reviews}
+                  onRefresh={loadAdminData}
+                  onNotify={showToast}
+                />
               )}
               {activeTab === 'settings' && (
                 <AdminSettingsTab
                   profile={profile}
                   settings={settings}
                   onRefresh={loadAdminData}
+                  onNotify={showToast}
                 />
               )}
             </>
           )}
         </main>
       </div>
+
+      <ToastBanner toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

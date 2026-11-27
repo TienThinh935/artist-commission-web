@@ -8,9 +8,15 @@ interface AdminSettingsTabProps {
   profile: ArtistProfile | null;
   settings: SiteSettings | null;
   onRefresh: () => Promise<void>;
+  onNotify: (type: 'success' | 'error', text: string) => void;
 }
 
-export function AdminSettingsTab({ profile, settings, onRefresh }: AdminSettingsTabProps) {
+export function AdminSettingsTab({
+  profile,
+  settings,
+  onRefresh,
+  onNotify,
+}: AdminSettingsTabProps) {
   const [artistName, setArtistName] = useState('');
   const [tagline, setTagline] = useState('');
   const [biography, setBiography] = useState('');
@@ -145,6 +151,7 @@ export function AdminSettingsTab({ profile, settings, onRefresh }: AdminSettings
     setSaving(false);
     setAvatarFile(null);
     setSavedNotice(true);
+    onNotify('success', 'Đã lưu toàn bộ hồ sơ Họa sĩ và cài đặt trang.');
     await onRefresh();
   };
 

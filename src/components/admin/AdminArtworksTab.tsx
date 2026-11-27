@@ -3,14 +3,21 @@ import { Eye, EyeOff, Plus, Star, Trash2, Edit2, X } from 'lucide-react';
 import { compressImageToWebP } from '../../lib/imageCompression';
 import { supabase } from '../../lib/supabase';
 import type { Artwork, ArtworkCategory } from '../../types/database';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface AdminArtworksTabProps {
   artworks: Artwork[];
   categories: ArtworkCategory[];
   onRefresh: () => Promise<void>;
+  onNotify: (type: 'success' | 'error', text: string) => void;
 }
 
-export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtworksTabProps) {
+export function AdminArtworksTab({
+  artworks,
+  categories,
+  onRefresh,
+  onNotify,
+}: AdminArtworksTabProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingArt, setEditingArt] = useState<Artwork | null>(null);
 
@@ -22,6 +29,8 @@ export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtwo
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Artwork | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const openCreate = () => {
     setEditingArt(null);
@@ -99,9 +108,11 @@ export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtwo
           .update(payload)
           .eq('id', editingArt.id);
         if (updateErr) throw new Error(updateErr.message);
+        onNotify('success', `Đã cập nhật tranh "${title.trim()}".`);
       } else {
         const { error: insertErr } = await supabase.from('artworks').insert(payload);
         if (insertErr) throw new Error(insertErr.message);
+        onNotify('success', `Đã đăng tranh mới "${title.trim()}".`);
       }
 
       setModalOpen(false);
@@ -114,28 +125,43 @@ export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtwo
   };
 
   const togglePublish = async (art: Artwork) => {
-    await supabase
+    const nextState = !art.is_published;
+    const { error: err } = await supabase
       .from('artworks')
-      .update({ is_published: !art.is_published })
+      .update({ is_published: nextState })
       .eq('id', art.id);
-    await onRefresh();
+    if (err) {
+      onNotify('error', `Không thể đổi trạng thái: ${err.message}`);
+    } else {
+      onNotify(
+        'success',
+        nextState ? `Đã hiển thị tranh "${art.title}".` : `Đã ẩn tranh "${art.title}".`
+      );
+      await onRefresh();
+    }
   };
 
-  const handleDelete = async (art: Artwork) => {
-    if (!window.confirm(`Xóa vĩnh viễn tranh "${art.title}"? Hành động này không thể hoàn tác.`)) {
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const { error: delErr } = await supabase.from('artworks').delete().eq('id', pendingDelete.id);
+    setDeleting(false);
+
+    if (delErr) {
+      onNotify('error', `Xóa tranh thất bại: ${delErr.message}`);
       return;
     }
 
-    const { error: delErr } = await supabase.from('artworks').delete().eq('id', art.id);
-    if (!delErr) {
-      const marker = '/portfolio-media/';
-      const idx = art.image_url.indexOf(marker);
-      if (idx !== -1) {
-        const storagePath = art.image_url.slice(idx + marker.length);
-        await supabase.storage.from('portfolio-media').remove([storagePath]);
-      }
-      await onRefresh();
+    const marker = '/portfolio-media/';
+    const idx = pendingDelete.image_url.indexOf(marker);
+    if (idx !== -1) {
+      const storagePath = pendingDelete.image_url.slice(idx + marker.length);
+      await supabase.storage.from('portfolio-media').remove([storagePath]);
     }
+
+    onNotify('success', `Đã xóa vĩnh viễn tranh "${pendingDelete.title}".`);
+    setPendingDelete(null);
+    await onRefresh();
   };
 
   return (
@@ -228,7 +254,7 @@ export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtwo
                     </button>
                     <button
                       type="button"
-                      onClick={() => void handleDelete(art)}
+                      onClick={() => setPendingDelete(art)}
                       className="rounded p-1 text-stone-400 hover:bg-red-50 hover:text-red-600"
                       aria-label={`Xóa ${art.title}`}
                     >
@@ -351,6 +377,15 @@ export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtwo
           </form>
         </div>
       )}
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Xóa tranh mẫu?"
+        description={`Bạn có chắc muốn xóa vĩnh viễn tranh "${pendingDelete?.title}"? Tệp ảnh cũng sẽ bị xóa khỏi hệ thống lưu trữ.`}
+        confirmLabel="Xóa tranh"
+        loading={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

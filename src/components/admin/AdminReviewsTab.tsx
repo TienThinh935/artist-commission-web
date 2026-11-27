@@ -3,13 +3,15 @@ import { Edit2, Eye, EyeOff, Plus, Star, Trash2, X } from 'lucide-react';
 import { compressImageToWebP } from '../../lib/imageCompression';
 import { supabase } from '../../lib/supabase';
 import type { Review } from '../../types/database';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface AdminReviewsTabProps {
   reviews: Review[];
   onRefresh: () => Promise<void>;
+  onNotify: (type: 'success' | 'error', text: string) => void;
 }
 
-export function AdminReviewsTab({ reviews, onRefresh }: AdminReviewsTabProps) {
+export function AdminReviewsTab({ reviews, onRefresh, onNotify }: AdminReviewsTabProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [customerName, setCustomerName] = useState('');
@@ -19,6 +21,8 @@ export function AdminReviewsTab({ reviews, onRefresh }: AdminReviewsTabProps) {
   const [isPublished, setIsPublished] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Review | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const openCreate = () => {
     setEditingReview(null);
@@ -70,8 +74,10 @@ export function AdminReviewsTab({ reviews, onRefresh }: AdminReviewsTabProps) {
 
     if (editingReview) {
       await supabase.from('reviews').update(payload).eq('id', editingReview.id);
+      onNotify('success', `Đã cập nhật đánh giá của "${customerName.trim()}".`);
     } else {
       await supabase.from('reviews').insert(payload);
+      onNotify('success', `Đã thêm đánh giá của "${customerName.trim()}".`);
     }
 
     setSaving(false);
@@ -80,18 +86,42 @@ export function AdminReviewsTab({ reviews, onRefresh }: AdminReviewsTabProps) {
   };
 
   const togglePublish = async (r: Review) => {
-    await supabase.from('reviews').update({ is_published: !r.is_published }).eq('id', r.id);
+    const next = !r.is_published;
+    await supabase.from('reviews').update({ is_published: next }).eq('id', r.id);
+    onNotify(
+      'success',
+      next
+        ? `Đã hiển thị đánh giá của "${r.customer_name}".`
+        : `Đã ẩn đánh giá của "${r.customer_name}".`
+    );
     await onRefresh();
   };
 
   const toggleFeature = async (r: Review) => {
-    await supabase.from('reviews').update({ is_featured: !r.is_featured }).eq('id', r.id);
+    const next = !r.is_featured;
+    await supabase.from('reviews').update({ is_featured: next }).eq('id', r.id);
+    onNotify(
+      'success',
+      next
+        ? `Đã đánh dấu nổi bật cho "${r.customer_name}".`
+        : `Đã bỏ nổi bật cho "${r.customer_name}".`
+    );
     await onRefresh();
   };
 
-  const handleDelete = async (r: Review) => {
-    if (!window.confirm(`Xóa đánh giá của "${r.customer_name}"?`)) return;
-    await supabase.from('reviews').delete().eq('id', r.id);
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const { error } = await supabase.from('reviews').delete().eq('id', pendingDelete.id);
+    setDeleting(false);
+
+    if (error) {
+      onNotify('error', `Xóa đánh giá thất bại: ${error.message}`);
+      return;
+    }
+
+    onNotify('success', `Đã xóa đánh giá của "${pendingDelete.customer_name}".`);
+    setPendingDelete(null);
     await onRefresh();
   };
 
@@ -169,7 +199,7 @@ export function AdminReviewsTab({ reviews, onRefresh }: AdminReviewsTabProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void handleDelete(r)}
+                    onClick={() => setPendingDelete(r)}
                     className="rounded p-1 text-stone-400 hover:text-red-600"
                     aria-label={`Xóa đánh giá ${r.customer_name}`}
                   >
@@ -272,6 +302,15 @@ export function AdminReviewsTab({ reviews, onRefresh }: AdminReviewsTabProps) {
           </form>
         </div>
       )}
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Xóa đánh giá khách hàng?"
+        description={`Bạn có chắc muốn xóa đánh giá của "${pendingDelete?.customer_name}"?`}
+        confirmLabel="Xóa đánh giá"
+        loading={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

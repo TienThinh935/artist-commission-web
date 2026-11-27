@@ -4,6 +4,7 @@ import { compressImageToWebP } from '../../lib/imageCompression';
 import { formatPrice } from '../../lib/pricing';
 import { supabase } from '../../lib/supabase';
 import type { AddonPricingType, CommissionAddon, CommissionType } from '../../types/database';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface AdminPricingTabProps {
   commissionTypes: CommissionType[];
@@ -11,6 +12,7 @@ interface AdminPricingTabProps {
   currencySymbol: string;
   currencyCode: string;
   onRefresh: () => Promise<void>;
+  onNotify: (type: 'success' | 'error', text: string) => void;
 }
 
 export function AdminPricingTab({
@@ -19,6 +21,7 @@ export function AdminPricingTab({
   currencySymbol,
   currencyCode,
   onRefresh,
+  onNotify,
 }: AdminPricingTabProps) {
   const [serviceModal, setServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<CommissionType | null>(null);
@@ -38,6 +41,13 @@ export function AdminPricingTab({
   const [aPrice, setAPrice] = useState('0');
   const [aType, setAType] = useState<AddonPricingType>('fixed');
   const [aActive, setAActive] = useState(true);
+
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: 'service'; item: CommissionType }
+    | { kind: 'addon'; item: CommissionAddon }
+    | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
 
   const openCreateService = () => {
     setEditingService(null);
@@ -92,18 +102,14 @@ export function AdminPricingTab({
 
     if (editingService) {
       await supabase.from('commission_types').update(payload).eq('id', editingService.id);
+      onNotify('success', `Đã cập nhật gói "${sName.trim()}".`);
     } else {
       await supabase.from('commission_types').insert(payload);
+      onNotify('success', `Đã thêm gói mới "${sName.trim()}".`);
     }
 
     setSavingService(false);
     setServiceModal(false);
-    await onRefresh();
-  };
-
-  const deleteService = async (t: CommissionType) => {
-    if (!window.confirm(`Xóa gói dịch vụ "${t.name}"?`)) return;
-    await supabase.from('commission_types').delete().eq('id', t.id);
     await onRefresh();
   };
 
@@ -139,16 +145,29 @@ export function AdminPricingTab({
 
     if (editingAddon) {
       await supabase.from('commission_addons').update(payload).eq('id', editingAddon.id);
+      onNotify('success', `Đã cập nhật tùy chọn "${aName.trim()}".`);
     } else {
       await supabase.from('commission_addons').insert(payload);
+      onNotify('success', `Đã thêm tùy chọn "${aName.trim()}".`);
     }
     setAddonModal(false);
     await onRefresh();
   };
 
-  const deleteAddon = async (a: CommissionAddon) => {
-    if (!window.confirm(`Xóa tùy chọn thêm "${a.name}"?`)) return;
-    await supabase.from('commission_addons').delete().eq('id', a.id);
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const table = pendingDelete.kind === 'service' ? 'commission_types' : 'commission_addons';
+    const { error } = await supabase.from(table).delete().eq('id', pendingDelete.item.id);
+    setDeleting(false);
+
+    if (error) {
+      onNotify('error', `Xóa thất bại: ${error.message}`);
+      return;
+    }
+
+    onNotify('success', `Đã xóa "${pendingDelete.item.name}".`);
+    setPendingDelete(null);
     await onRefresh();
   };
 
@@ -217,7 +236,7 @@ export function AdminPricingTab({
                     </button>
                     <button
                       type="button"
-                      onClick={() => void deleteService(t)}
+                      onClick={() => setPendingDelete({ kind: 'service', item: t })}
                       className="rounded p-1 text-stone-400 hover:text-red-600"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -293,7 +312,7 @@ export function AdminPricingTab({
                     </button>
                     <button
                       type="button"
-                      onClick={() => void deleteAddon(a)}
+                      onClick={() => setPendingDelete({ kind: 'addon', item: a })}
                       className="rounded p-1 text-stone-400 hover:text-red-600"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -478,6 +497,15 @@ export function AdminPricingTab({
           </form>
         </div>
       )}
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title={pendingDelete?.kind === 'service' ? 'Xóa gói dịch vụ?' : 'Xóa tùy chọn thêm?'}
+        description={`Bạn có chắc muốn xóa "${pendingDelete?.item.name}"? Mục này sẽ biến mất khỏi bảng giá và công cụ ước tính.`}
+        confirmLabel="Xác nhận xóa"
+        loading={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
