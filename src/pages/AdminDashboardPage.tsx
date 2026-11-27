@@ -137,13 +137,13 @@ export function AdminDashboardPage() {
     <div className="min-h-screen bg-[#FAF8F5] text-stone-900">
       {/* Top Admin Header */}
       <header className="border-b border-stone-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <span className="font-display text-2xl font-semibold text-stone-900">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <span className="font-display whitespace-nowrap text-xl font-semibold text-stone-900 sm:text-2xl">
               Quản trị Studio
             </span>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+              className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                 settings?.commission_status === 'OPEN'
                   ? 'bg-emerald-50 text-emerald-700'
                   : 'bg-stone-100 text-stone-600'
@@ -153,21 +153,22 @@ export function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link
               to="/"
               target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-md border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-stone-900"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-stone-900"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Xem trang công khai
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">Xem trang công khai</span>
+              <span className="sm:hidden">Trang chủ</span>
             </Link>
             <button
               type="button"
               onClick={() => void signOut()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-[#9A3412]"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-[#9A3412]"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-3.5 w-3.5 shrink-0" />
               Đăng xuất
             </button>
           </div>

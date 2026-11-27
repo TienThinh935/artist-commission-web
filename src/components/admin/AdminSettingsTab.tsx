@@ -150,7 +150,7 @@ export function AdminSettingsTab({ profile, settings, onRefresh }: AdminSettings
 
   return (
     <form onSubmit={handleSave} className="space-y-8 text-xs">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-2xl font-semibold text-stone-900">
             Hồ sơ Họa sĩ &amp; Cài đặt trang
@@ -163,7 +163,7 @@ export function AdminSettingsTab({ profile, settings, onRefresh }: AdminSettings
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-md bg-stone-900 px-5 py-2.5 font-semibold text-white hover:bg-[#9A3412] disabled:opacity-50"
+          className="inline-flex w-fit shrink-0 items-center gap-2 whitespace-nowrap rounded-md bg-stone-900 px-5 py-2.5 font-semibold text-white hover:bg-[#9A3412] disabled:opacity-50"
         >
           {savedNotice && <Check className="h-4 w-4 text-emerald-400" />}
           {saving ? 'Đang lưu...' : savedNotice ? 'Đã lưu' : 'Lưu tất cả thay đổi'}

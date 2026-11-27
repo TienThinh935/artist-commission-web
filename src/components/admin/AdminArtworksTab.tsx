@@ -140,7 +140,7 @@ export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtwo
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-2xl font-semibold text-stone-900">
             Tranh mẫu Portfolio ({artworks.length})
@@ -154,7 +154,7 @@ export function AdminArtworksTab({ artworks, categories, onRefresh }: AdminArtwo
           type="button"
           onClick={openCreate}
           disabled={categories.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-md bg-stone-900 px-4 py-2 text-xs font-semibold text-white hover:bg-[#9A3412] disabled:opacity-50"
+          className="inline-flex w-fit shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-stone-900 px-4 py-2 text-xs font-semibold text-white hover:bg-[#9A3412] disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           Upload Tranh
