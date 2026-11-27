@@ -457,38 +457,7 @@ export function CommissionFormSection({
                 <div className="mt-2 flex flex-wrap gap-2">
                   {commissionAddons.map((addon) => {
                     const checked = selectedAddonIds.includes(addon.id);
-                    const handleLookup = async (e: FormEvent) => {
-    e.preventDefault();
-    setLookupError(null);
-    setLookupResult(null);
-
-    if (!lookupCode.trim() || !lookupEmail.trim()) {
-      setLookupError('Vui lòng nhập đầy đủ Mã yêu cầu và Email đã dùng khi đặt.');
-      return;
-    }
-
-    setLookupLoading(true);
-    const { data, error } = await supabase.rpc('lookup_commission_status', {
-      p_order_code: lookupCode.trim(),
-      p_email: lookupEmail.trim(),
-    });
-    setLookupLoading(false);
-
-    if (error) {
-      setLookupError('Không thể tra cứu lúc này. Vui lòng thử lại sau.');
-      return;
-    }
-
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row) {
-      setLookupError('Không tìm thấy đơn nào khớp với Mã yêu cầu và Email này.');
-      return;
-    }
-
-    setLookupResult(row);
-  };
-
-  return (
+                    return (
                       <button
                         key={addon.id}
                         type="button"
