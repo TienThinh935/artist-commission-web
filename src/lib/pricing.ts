@@ -52,12 +52,12 @@ export function calculateCommissionEstimate(
  */
 export function formatPrice(
   amount: number,
-  currencySymbol = 'k',
+  currencySymbol = '₫',
   currencyCode = 'VND'
 ): string {
   const num = Number(amount) || 0;
   if (currencyCode.toUpperCase() === 'VND') {
-    return `${Math.round(num).toLocaleString('vi-VN')}${currencySymbol || 'k'}`;
+    return `${Math.round(num).toLocaleString('vi-VN')}${currencySymbol || '₫'}`;
   }
   const formatted = Number.isInteger(num)
     ? num.toLocaleString('en-US')

@@ -156,7 +156,7 @@ export function AdminDashboardPage() {
     { id: 'settings', label: 'Hồ sơ & ToS', icon: Settings },
   ];
 
-  const currencySymbol = settings?.currency_symbol || 'k';
+  const currencySymbol = settings?.currency_symbol || '₫';
   const currencyCode = settings?.currency_code || 'VND';
 
   return (

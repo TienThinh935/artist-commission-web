@@ -39,10 +39,10 @@ ON CONFLICT (slug) DO NOTHING;
 INSERT INTO public.commission_types (name, description, base_price, additional_char_percent, estimated_delivery, is_active, display_order)
 SELECT * FROM (
   VALUES
-    ('[Mẫu] Chibi', 'Vẽ chibi toàn thân dễ thương, tô màu cơ bản, nền đơn giản hoặc trong suốt.', 150, 80.00, '3–7 ngày', true, 1),
-    ('[Mẫu] Headshot / Bust', 'Vẽ chân dung từ vai trở lên, lên màu và ánh sáng chi tiết.', 250, 75.00, '5–10 ngày', true, 2),
-    ('[Mẫu] Half Body', 'Vẽ nửa người từ eo trở lên, chi tiết trang phục và nền đơn giản.', 350, 75.00, '1–2 tuần', true, 3),
-    ('[Mẫu] Full Body', 'Vẽ toàn thân, dáng động và lên màu hoàn chỉnh.', 500, 75.00, '2–3 tuần', true, 4)
+    ('[Mẫu] Chibi', 'Vẽ chibi toàn thân dễ thương, tô màu cơ bản, nền đơn giản hoặc trong suốt.', 150000, 80.00, '3–7 ngày', true, 1),
+    ('[Mẫu] Headshot / Bust', 'Vẽ chân dung từ vai trở lên, lên màu và ánh sáng chi tiết.', 250000, 75.00, '5–10 ngày', true, 2),
+    ('[Mẫu] Half Body', 'Vẽ nửa người từ eo trở lên, chi tiết trang phục và nền đơn giản.', 350000, 75.00, '1–2 tuần', true, 3),
+    ('[Mẫu] Full Body', 'Vẽ toàn thân, dáng động và lên màu hoàn chỉnh.', 500000, 75.00, '2–3 tuần', true, 4)
 ) AS v(name, description, base_price, additional_char_percent, estimated_delivery, is_active, display_order)
 WHERE NOT EXISTS (SELECT 1 FROM public.commission_types);
 
@@ -50,8 +50,8 @@ WHERE NOT EXISTS (SELECT 1 FROM public.commission_types);
 INSERT INTO public.commission_addons (name, description, price, pricing_type, is_active, display_order)
 SELECT * FROM (
   VALUES
-    ('[Mẫu] Nền chi tiết (Detailed Background)', 'Vẽ bối cảnh, kiến trúc hoặc không gian theo yêu cầu.', 150, 'fixed', true, 1),
-    ('[Mẫu] Trang phục / Phụ kiện phức tạp', 'Giáp, cánh, vũ khí hoặc nhiều phụ kiện cầu kỳ.', 80, 'per_character', true, 2),
+    ('[Mẫu] Nền chi tiết (Detailed Background)', 'Vẽ bối cảnh, kiến trúc hoặc không gian theo yêu cầu.', 150000, 'fixed', true, 1),
+    ('[Mẫu] Trang phục / Phụ kiện phức tạp', 'Giáp, cánh, vũ khí hoặc nhiều phụ kiện cầu kỳ.', 80000, 'per_character', true, 2),
     ('[Mẫu] Sử dụng thương mại (Commercial)', 'Dùng cho stream, in ấn bán hàng hoặc thương hiệu (+100% giá gốc).', 100.00, 'percentage', true, 3)
 ) AS v(name, description, price, pricing_type, is_active, display_order)
 WHERE NOT EXISTS (SELECT 1 FROM public.commission_addons);
@@ -67,7 +67,7 @@ INSERT INTO public.site_settings (
 SELECT
   'OPEN',
   'VND',
-  'k',
+  '₫',
   E'[PLACEHOLDER TERMS OF SERVICE — ARTIST MUST REVIEW AND REPLACE BEFORE PUBLISHING]\n\n1. Will Draw / Won''t Draw\n• Will Draw: Original characters, fanart, couples, mild fantasy.\n• Won''t Draw: NSFW, extreme gore, mecha, hateful or offensive content.\n\n2. Payment & Pricing\n• Prices shown in the estimator are starting estimates. Final quotes depend on complexity.\n• Payment terms (e.g., 50% upfront after sketch approval / 100% upfront) should be specified here.\n\n3. Revisions\n• Up to 2–3 minor revisions during the sketch phase. Major changes after lineart/coloring may incur an additional fee.\n\n4. Turnaround & Cancellation\n• Typical turnaround is 1–3 weeks depending on queue and complexity.\n• Refunds are only available before work has started.\n\n5. Copyright & Usage\n• Personal use only unless commercial rights are purchased. Artist retains rights to display the artwork in their portfolio unless requested otherwise.',
   '[
     {"step": 1, "title": "Submit Request", "description": "Fill out the commission form with your character details, references, and preferred style."},
