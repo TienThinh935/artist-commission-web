@@ -173,7 +173,7 @@ CREATE TABLE public.site_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   commission_status TEXT NOT NULL DEFAULT 'OPEN' CHECK (commission_status IN ('OPEN', 'CLOSED')),
   currency_code TEXT NOT NULL DEFAULT 'VND',
-  currency_symbol TEXT NOT NULL DEFAULT '₫',
+  currency_symbol TEXT NOT NULL DEFAULT 'k',
   terms_of_service TEXT NOT NULL DEFAULT '',
   commission_process JSONB NOT NULL DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

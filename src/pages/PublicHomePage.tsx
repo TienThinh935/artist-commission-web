@@ -33,7 +33,7 @@ export function PublicHomePage() {
 
   const artistName = profile?.artist_name || 'Artist Studio';
   const commissionStatus = settings?.commission_status || 'CLOSED';
-  const currencySymbol = settings?.currency_symbol || '₫';
+  const currencySymbol = settings?.currency_symbol || 'k';
   const currencyCode = settings?.currency_code || 'VND';
   const featuredArtworks = artworks.filter((a) => a.is_featured);
 

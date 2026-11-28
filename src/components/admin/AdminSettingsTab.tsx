@@ -32,7 +32,7 @@ export function AdminSettingsTab({
 
   const [commissionStatus, setCommissionStatus] = useState<CommissionStatus>('OPEN');
   const [currencyCode, setCurrencyCode] = useState('VND');
-  const [currencySymbol, setCurrencySymbol] = useState('₫');
+  const [currencySymbol, setCurrencySymbol] = useState('k');
   const [termsOfService, setTermsOfService] = useState('');
   const [processSteps, setProcessSteps] = useState<ProcessStep[]>([]);
 
@@ -137,7 +137,7 @@ export function AdminSettingsTab({
     const settingsPayload = {
       commission_status: commissionStatus,
       currency_code: currencyCode.trim().toUpperCase() || 'VND',
-      currency_symbol: currencySymbol.trim() || '₫',
+      currency_symbol: currencySymbol.trim() || 'k',
       terms_of_service: termsOfService,
       commission_process: normalizedSteps,
     };
@@ -336,13 +336,13 @@ export function AdminSettingsTab({
               onChange={(e) => {
                 const code = e.target.value;
                 setCurrencyCode(code);
-                if (code === 'VND') setCurrencySymbol('₫');
+                if (code === 'VND') setCurrencySymbol('k');
                 if (code === 'USD') setCurrencySymbol('$');
                 if (code === 'EUR') setCurrencySymbol('€');
               }}
               className="mt-1 w-full rounded border border-stone-300 px-3 py-2"
             >
-              <option value="VND">VND (₫)</option>
+              <option value="VND">VND (k)</option>
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
             </select>
